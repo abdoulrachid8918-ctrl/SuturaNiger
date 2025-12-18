@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUTURA ADMIN | Gestion Cloud</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Montserrat:wght@300;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #E05206;
+            --bg: #0b0f1a;
+            --card: #161e2d;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Montserrat';
+            background: var(--bg);
+            color: white;
+            display: flex;
+        }
+
+        /* Menu Latéral */
+        .sidebar {
+            width: 260px;
+            background: var(--card);
+            height: 100vh;
+            position: fixed;
+            padding: 20px;
+            border-right: 1px solid #2d3748;
+        }
+
+        .nav-item {
+            padding: 15px;
+            cursor: pointer;
+            color: #a0aec0;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Zone Principale */
+        .main {
+            margin-left: 260px;
+            padding: 40px;
+            width: calc(100% - 260px);
+        }
+
+        .panel {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* Formulaire */
+        .form-box {
+            max-width: 450px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+
+        .btn-publish {
+            background: var(--primary);
+            border: none;
+            padding: 16px;
+            color: white;
+            width: 100%;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .btn-publish:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        /* Tableaux */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background: var(--card);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background: #1e293b;
+            padding: 15px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: var(--primary);
+        }
+
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .img-item {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <h2 style="font-family:'Syncopate'; color:var(--primary); font-size:1.2rem; margin-bottom:40px;">SUTURA ADMIN
+        </h2>
+        <div class="nav-item active" onclick="showTab('tab-add', this)"><i class="fas fa-plus"></i> Ajouter Produit
+        </div>
+        <div class="nav-item" onclick="showTab('tab-orders', this)"><i class="fas fa-receipt"></i> Commandes</div>
+        <div class="nav-item" onclick="showTab('tab-clients', this)"><i class="fas fa-users"></i> Clients Niger</div>
+        <a href="index.html"
+            style="color:#ff4b4b; text-decoration:none; display:block; margin-top:100px; padding:15px;"><i
+                class="fas fa-power-off"></i> Déconnexion</a>
+    </div>
+
+    <div class="main">
+        <div id="tab-add" class="panel active">
+            <h1>Publier une Nouveauté</h1>
+            <div class="form-box">
+                <input type="text" id="name" placeholder="Nom de l'article">
+                <input type="number" id="price" placeholder="Prix (ex: 12500)">
+                <label style="font-size: 0.8rem; color: #a0aec0;">Photo de l'article :</label>
+                <input type="file" id="file" accept="image/*">
+                <button class="btn-publish" id="btn" onclick="uploadToFirebase()">METTRE EN LIGNE</button>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Aperçu</th>
+                        <th>Article</th>
+                        <th>Prix</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="prod-list"></tbody>
+            </table>
+        </div>
+
+        <div id="tab-orders" class="panel">
+            <h1>Commandes à Livrer</h1>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>N° Commande</th>
+                        <th>Client</th>
+                        <th>Total</th>
+                        <th>Méthode</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="order-list"></tbody>
+            </table>
+        </div>
+
+        <div id="tab-clients" class="panel">
+            <h1>Fidélité Clients</h1>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Téléphone</th>
+                        <th>Total Achats</th>
+                    </tr>
+                </thead>
+                <tbody id="client-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyC3EIvG4VN_WJDrydS8AJf0hDVSPtcvOsQ",
+            authDomain: "sutura-niger.firebaseapp.com",
+            databaseURL: "https://sutura-niger-default-rtdb.firebaseio.com",
+            projectId: "sutura-niger",
+            storageBucket: "sutura-niger.firebasestorage.app",
+            messagingSenderId: "601105750522",
+            appId: "1:601105750522:web:9e0946a10db11b93ef6c43"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function showTab(id, el) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // --- FONCTION PUBLICATION ---
+        function uploadToFirebase() {
+            const name = document.getElementById('name').value;
+            const price = document.getElementById('price').value;
+            const file = document.getElementById('file').files[0];
+            const btn = document.getElementById('btn');
+
+            if (!name || !price || !file) return alert("Remplis tous les champs !");
+
+            btn.disabled = true;
+            btn.innerText = "Chargement...";
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                db.ref('products').push({
+                    title: name,
+                    price: price,
+                    img: e.target.result
+                }).then(() => {
+                    alert("Article publié avec succès !");
+                    location.reload();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- SYNC PRODUITS ---
+        db.ref('products').on('value', s => {
+            const list = document.getElementById('prod-list'); list.innerHTML = "";
+            s.forEach(child => {
+                const p = child.val();
+                list.innerHTML += `<tr>
+                    <td><img src="${p.img}" class="img-item"></td>
+                    <td>${p.title}</td>
+                    <td>${p.price} F</td>
+                    <td><button onclick="db.ref('products/${child.key}').remove()" style="color:red; background:none; border:none; cursor:pointer;">Supprimer</button></td>
+                </tr>`;
+            });
+        });
+
+        // --- SYNC COMMANDES ---
+        db.ref('invoices').on('value', s => {
+            const list = document.getElementById('order-list'); list.innerHTML = "";
+            s.forEach(child => {
+                const o = child.val();
+                list.innerHTML += `<tr>
+                    <td style="color:var(--primary); font-weight:bold;">${o.orderNumber}</td>
+                    <td>${o.customer}</td>
+                    <td>${o.total}</td>
+                    <td>${o.method}</td>
+                    <td><button onclick="db.ref('invoices/${child.key}').remove()">Archiver</button></td>
+                </tr>`;
+            });
+        });
+
+        // --- SYNC CLIENTS ---
+        db.ref('clients').on('value', s => {
+            const list = document.getElementById('client-list'); list.innerHTML = "";
+            s.forEach(child => {
+                const c = child.val();
+                list.innerHTML += `<tr>
+                    <td>${c.name}</td>
+                    <td>${child.key}</td>
+                    <td style="font-weight:bold; color:var(--primary);">${c.totalSpend.toLocaleString()} FCFA</td>
+                </tr>`;
+            });
+        });
+    </script>
+</body>
+
+</html>

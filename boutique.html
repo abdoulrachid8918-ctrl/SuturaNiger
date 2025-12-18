@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boutique - SUTURA NIGER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary: #E05206; --dark: #000000; --light: #ffffff; }
+        body { margin: 0; font-family: 'Montserrat', sans-serif; background: #f4f4f4; padding-top: 80px; }
+
+        /* NAVBAR */
+        .nav { position: fixed; top: 0; width: 100%; background: var(--dark); padding: 15px 0; z-index: 1000; }
+        .nav-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; }
+        .logo { font-family: 'Syncopate'; color: var(--light); text-decoration: none; font-size: 1.2rem; letter-spacing: 3px; }
+        .nav-links a { color: var(--light); text-decoration: none; margin-left: 20px; font-size: 0.8rem; font-weight: 600; transition: 0.3s; }
+        .nav-links a:hover { color: var(--primary); }
+        .badge { background: var(--primary); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 50%; margin-left: 5px; }
+
+        /* SECTION TITRE */
+        .header { text-align: center; padding: 50px 20px; background: white; margin-bottom: 30px; }
+        .header h1 { font-family: 'Syncopate'; font-size: 2rem; margin: 0; }
+        .header p { color: var(--primary); font-weight: bold; letter-spacing: 2px; }
+
+        /* GRILLE PRODUITS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; padding: 0 25px 50px; max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; }
+        .card:hover { transform: translateY(-10px); }
+        .card img { width: 100%; height: 350px; object-fit: cover; }
+        .card-info { padding: 20px; text-align: center; }
+        .card-info h3 { margin: 0 0 10px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .price { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 15px; }
+        .btn-add { background: var(--dark); color: white; border: none; padding: 12px; width: 100%; border-radius: 25px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add:hover { background: var(--primary); }
+
+        #loader { text-align: center; padding: 50px; font-size: 1.2rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="index.html" class="logo">SUTURA</a>
+            <div class="nav-links">
+                <a href="index.html">ACCUEIL</a>
+                <a href="boutique.html" style="color:var(--primary);">BOUTIQUE</a>
+                <a href="panier.html"><i class="fas fa-shopping-bag"></i><span id="count" class="badge">0</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="header">
+        <h1>NOTRE COLLECTION</h1>
+        <p>L'ÉLÉGANCE DU SAHEL</p>
+    </div>
+
+    <div id="loader">Chargement des nouveautés...</div>
+    <div class="grid" id="product-grid"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC3EIvG4VN_WJDrydS8AJf0hDVSPtcvOsQ",
+            authDomain: "sutura-niger.firebaseapp.com",
+            databaseURL: "https://sutura-niger-default-rtdb.firebaseio.com",
+            projectId: "sutura-niger",
+            storageBucket: "sutura-niger.firebasestorage.app",
+            messagingSenderId: "601105750522",
+            appId: "1:601105750522:web:9e0946a10db11b93ef6c43"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Écouter les produits en temps réel
+        function syncProducts() {
+            const grid = document.getElementById('product-grid');
+            const loader = document.getElementById('loader');
+
+            db.ref('products').on('value', (snapshot) => {
+                const data = snapshot.val();
+                loader.style.display = 'none';
+                grid.innerHTML = "";
+
+                if (!data) {
+                    grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Aucun produit n'est disponible pour le moment.</p>";
+                    return;
+                }
+
+                for (let id in data) {
+                    const p = data[id];
+                    grid.innerHTML += `
+                        <div class="card">
+                            <img src="${p.img}">
+                            <div class="card-info">
+                                <h3>${p.title}</h3>
+                                <div class="price">${parseInt(p.price).toLocaleString()} FCFA</div>
+                                <button class="btn-add" onclick="addToCart('${p.title}', ${p.price}, '${p.img}')">
+                                    <i class="fas fa-cart-plus"></i> AJOUTER AU PANIER
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            });
+        }
+
+        function addToCart(title, price, img) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart.push({ title, price, img });
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateBadge();
+            alert("Ajouté : " + title);
+        }
+
+        function updateBadge() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            document.getElementById('count').innerText = cart.length;
+        }
+
+        window.onload = () => {
+            syncProducts();
+            updateBadge();
+        };
+    </script>
+</body>
+</html>

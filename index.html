@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUTURA NIGER | Mode & Élégance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>
+        :root { --primary: #E05206; --white: #ffffff; }
+        body, html { margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; background: #000; color: white; overflow-x: hidden; }
+        
+        .hero { height: 100vh; background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1509631179647-0177331693ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'); background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        
+        .logo-main { font-family: 'Syncopate'; font-size: 4rem; letter-spacing: 15px; margin-bottom: 10px; animation: fadeIn 2s ease; }
+        .slogan { font-size: 1.2rem; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 30px; color: var(--primary); }
+        
+        .btn-shop { padding: 15px 40px; border: 2px solid var(--white); color: white; text-decoration: none; font-weight: bold; transition: 0.4s; border-radius: 50px; text-transform: uppercase; }
+        .btn-shop:hover { background: var(--white); color: #000; }
+        
+        .admin-link { position: fixed; bottom: 20px; right: 20px; color: rgba(255,255,255,0.3); text-decoration: none; font-size: 0.7rem; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <h1 class="logo-main">SUTURA</h1>
+        <p class="slogan">L'Élégance du Niger au Quotidien</p>
+        <a href="boutique.html" class="btn-shop">Découvrir la Collection</a>
+    </section>
+
+    <a href="admin.html" class="admin-link"><i class="fas fa-lock"></i> Accès Admin</a>
+
+</body>
+</html>

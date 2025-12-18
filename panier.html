@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Panier - Sutura Niger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat';
+            background: #f8f9fa;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .box {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        .btn-pay {
+            background: #000;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        #receipt-pdf {
+            display: none;
+            padding: 30px;
+            text-align: center;
+            font-family: Arial;
+            background: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h2 style="text-align:center;">MON PANIER</h2>
+        <div id="list"></div>
+        <h3 style="text-align:right;">TOTAL : <span id="total">0</span> FCFA</h3>
+
+        <input type="text" id="cust-name" placeholder="Nom Complet">
+        <input type="text" id="cust-phone" placeholder="Téléphone (WhatsApp)">
+
+        <select id="pay-method">
+            <option value="Espèces">Espèces à la livraison</option>
+            <option value="AmanPay">Aman-Pay / Bank</option>
+            <option value="MobileMoney">Moov Flooz / Airtel Money</option>
+        </select>
+
+        <button class="btn-pay" onclick="processOrder()">CONFIRMER & REÇU PDF</button>
+        <p style="text-align:center;"><a href="boutique.html"
+                style="color:gray; font-size:0.8rem; text-decoration:none;">Retour à la boutique</a></p>
+    </div>
+
+    <div id="receipt-pdf">
+        <h1 style="margin:0; color:#E05206;">SUTURA NIGER</h1>
+        <p>Facture Officielle</p>
+        <hr>
+        <div id="pdf-info" style="text-align:left; line-height:1.6;"></div>
+        <div id="pdf-items" style="margin: 20px 0;"></div>
+        <h2 id="pdf-total" style="text-align:right; border-top:2px solid #000; padding-top:10px;"></h2>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC3EIvG4VN_WJDrydS8AJf0hDVSPtcvOsQ",
+            authDomain: "sutura-niger.firebaseapp.com",
+            databaseURL: "https://sutura-niger-default-rtdb.firebaseio.com",
+            projectId: "sutura-niger",
+            storageBucket: "sutura-niger.firebasestorage.app",
+            messagingSenderId: "601105750522",
+            appId: "1:601105750522:web:9e0946a10db11b93ef6c43"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function load() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let list = document.getElementById('list'); let tot = 0;
+            list.innerHTML = "";
+            cart.forEach(i => {
+                list.innerHTML += `<div class="item"><span>${i.title}</span><b>${i.price} F</b></div>`;
+                tot += parseInt(i.price);
+            });
+            document.getElementById('total').innerText = tot.toLocaleString();
+        }
+
+        async function processOrder() {
+            const name = document.getElementById('cust-name').value;
+            const phone = document.getElementById('cust-phone').value;
+            const method = document.getElementById('pay-method').value;
+            const totalStr = document.getElementById('total').innerText;
+            const totalNum = parseInt(totalStr.replace(/\s/g, ''));
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+            if (!name || !phone || cart.length === 0) return alert("Informations manquantes !");
+
+            const orderId = "SN-" + Math.floor(1000 + Math.random() * 9000);
+            const date = new Date().toLocaleDateString('fr-FR');
+
+            // 1. Double Reçu Cloud
+            await db.ref('invoices').push({
+                orderNumber: orderId,
+                customer: name,
+                phone: phone,
+                total: totalStr + " FCFA",
+                method: method,
+                date: date
+            });
+
+            // 2. Fidélité Client
+            await db.ref('clients/' + phone).set({
+                name: name,
+                totalSpend: firebase.database.ServerValue.increment(totalNum)
+            });
+
+            // 3. Préparation PDF
+            document.getElementById('pdf-info').innerHTML = `
+                <b>N° COMMANDE : ${orderId}</b><br>
+                Client : ${name}<br>
+                Date : ${date}<br>
+                Mode de Paiement : ${method}
+            `;
+
+            const pdfItems = document.getElementById('pdf-items');
+            pdfItems.innerHTML = "";
+            cart.forEach(i => {
+                pdfItems.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dotted #ccc;">
+                    <span>${i.title}</span> <b>${i.price} F</b>
+                </div>`;
+            });
+            document.getElementById('pdf-total').innerText = "TOTAL : " + totalStr + " FCFA";
+
+            const element = document.getElementById('receipt-pdf');
+            element.style.display = 'block';
+            await html2pdf().set({ margin: 15, filename: `Sutura_Commande_${orderId}.pdf` }).from(element).save();
+            element.style.display = 'none';
+
+            localStorage.removeItem('cart');
+            alert("Merci " + name + " ! Commande " + orderId + " confirmée.");
+            window.location.href = "index.html";
+        }
+        window.onload = load;
+    </script>
+</body>
+
+</html>
